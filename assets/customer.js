@@ -1,85 +1,76 @@
-const selectors = {
-  customerAddresses: '[data-customer-addresses]',
-  addressCountrySelect: '[data-address-country-select]',
-  addressContainer: '[data-address]',
-  toggleAddressButton: 'button[aria-expanded]',
-  cancelAddressButton: 'button[type="reset"]',
-  deleteAddressButton: 'button[data-confirm-message]',
-};
-
-const attributes = {
-  expanded: 'aria-expanded',
-  confirmMessage: 'data-confirm-message',
-};
+/**
+ *  @class
+ *  @function  CustomerAddresses
+ */
 
 class CustomerAddresses {
+
   constructor() {
-    this.elements = this._getElements();
-    if (Object.keys(this.elements).length === 0) return;
-    this._setupCountries();
-    this._setupEventListeners();
+    this.add_new = document.querySelector('.add-address');
+    this.edit_addresses = document.querySelectorAll('.edit-address-button');
+    this.delete_addresses = document.querySelectorAll('.delete-address-button');
+    // Add functionality to buttons
+    this.add_new.addEventListener('click', (e) => this.toggle_addnew(e));
+    this.edit_addresses.forEach((edit_address) => {
+      this.edit_address(edit_address);
+    });
+    this.delete_addresses.forEach((delete_address) => {
+      this.delete_address(delete_address);
+    });
+    this.setupCountries();
   }
 
-  _getElements() {
-    const container = document.querySelector(selectors.customerAddresses);
-    return container
-      ? {
-          container,
-          addressContainer: container.querySelector(selectors.addressContainer),
-          toggleButtons: document.querySelectorAll(selectors.toggleAddressButton),
-          cancelButtons: container.querySelectorAll(selectors.cancelAddressButton),
-          deleteButtons: container.querySelectorAll(selectors.deleteAddressButton),
-          countrySelects: container.querySelectorAll(selectors.addressCountrySelect),
-        }
-      : {};
-  }
+  toggle_addnew(e) {
+    e.preventDefault();
+    let add_new_sidepanel = document.querySelector('#Side-Panel-Add-Address');
 
-  _setupCountries() {
+    document.getElementsByTagName("body")[0].classList.add('open-cc');
+
+    add_new_sidepanel.classList.add('active');
+  }
+  edit_address(edit_address) {
+    let _this = this,
+      button = edit_address,
+      target = button.closest('.my-address').querySelector('#' + button.dataset.controls);
+
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementsByTagName("body")[0].classList.add('open-cc');
+      target.classList.add('active');
+    });
+  }
+  delete_address(delete_address) {
+    delete_address.addEventListener('click', (e) => {
+      // eslint-disable-next-line no-alert
+      if (confirm(e.target.getAttribute('data-confirm-message'))) {
+        Shopify.postLink(e.target.getAttribute('data-target'), {
+          parameters: {
+            _method: 'delete'
+          },
+        });
+      }
+    });
+  }
+  setupCountries() {
     if (Shopify && Shopify.CountryProvinceSelector) {
-      // eslint-disable-next-line no-new
-      new Shopify.CountryProvinceSelector('AddressCountryNew', 'AddressProvinceNew', {
-        hideElement: 'AddressProvinceContainerNew',
-      });
-      this.elements.countrySelects.forEach((select) => {
+
+      document.querySelectorAll('[data-address-country-select]').forEach((select) => {
         const formId = select.dataset.formId;
         // eslint-disable-next-line no-new
         new Shopify.CountryProvinceSelector(`AddressCountry_${formId}`, `AddressProvince_${formId}`, {
-          hideElement: `AddressProvinceContainer_${formId}`,
+          hideElement: `AddressProvinceContainer_${formId}`
         });
       });
-    }
-  }
 
-  _setupEventListeners() {
-    this.elements.toggleButtons.forEach((element) => {
-      element.addEventListener('click', this._handleAddEditButtonClick);
-    });
-    this.elements.cancelButtons.forEach((element) => {
-      element.addEventListener('click', this._handleCancelButtonClick);
-    });
-    this.elements.deleteButtons.forEach((element) => {
-      element.addEventListener('click', this._handleDeleteButtonClick);
-    });
-  }
-
-  _toggleExpanded(target) {
-    target.setAttribute(attributes.expanded, (target.getAttribute(attributes.expanded) === 'false').toString());
-  }
-
-  _handleAddEditButtonClick = ({ currentTarget }) => {
-    this._toggleExpanded(currentTarget);
-  };
-
-  _handleCancelButtonClick = ({ currentTarget }) => {
-    this._toggleExpanded(currentTarget.closest(selectors.addressContainer).querySelector(`[${attributes.expanded}]`));
-  };
-
-  _handleDeleteButtonClick = ({ currentTarget }) => {
-    // eslint-disable-next-line no-alert
-    if (confirm(currentTarget.getAttribute(attributes.confirmMessage))) {
-      Shopify.postLink(currentTarget.dataset.target, {
-        parameters: { _method: 'delete' },
+      // eslint-disable-next-line no-new
+      new Shopify.CountryProvinceSelector('AddressCountryNew', 'AddressProvinceNew', {
+        hideElement: 'AddressProvinceContainerNew'
       });
     }
-  };
+  }
 }
+window.addEventListener('load', () => {
+  if (typeof CustomerAddresses !== 'undefined') {
+    new CustomerAddresses();
+  }
+});
